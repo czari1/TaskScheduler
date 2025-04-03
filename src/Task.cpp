@@ -1,4 +1,5 @@
 #include "../include/core/Task.hpp"
+#include "../include/database/Exceptions.hpp"
 
 Task::Task(int id, 
            const string& description, 
@@ -11,6 +12,22 @@ Task::Task(int id,
       createdAt(createdAt),
       dueDate(dueDate),
       completed(false) {
+        
+        if (id < 0) {
+            throw InvalidTaskDataException("Task ID cannot be negative");
+        }
+        
+        if (description.empty()) {
+            throw InvalidTaskDataException("Task description cannot be empty");
+        }
+        
+        if (reminderTimeBefore < 0) {
+            throw InvalidTaskDataException("Reminder time before due date cannot be negative");
+        }
+        
+        if (dueDate <= createdAt) {
+            throw InvalidTaskDataException("Due date must be after creation date");
+        }
 }
 
 int Task::getId() const {
@@ -42,7 +59,6 @@ void Task::markIncomplete() {
 }
 
 std::chrono::system_clock::time_point Task::getReminderTime() const {
-    // Calculate reminder time based on minutes before due date
     return dueDate - std::chrono::minutes(reminderTimeBefore);
 }
 
@@ -51,6 +67,7 @@ int Task::getReminderTimeBefore() const {
 }
 
 bool Task::setId(int newId) {
+    
     if (newId <= 0) {
         return false;
     }
@@ -59,6 +76,7 @@ bool Task::setId(int newId) {
 }
 
 bool Task::setDescription(const string& newDescription) {
+    
     if (newDescription.empty()) {
         return false;
     }
@@ -67,8 +85,8 @@ bool Task::setDescription(const string& newDescription) {
 }
 
 bool Task::setDueDate(const std::chrono::system_clock::time_point& newDueDate) {
-    // Validate that due date is in the future
-    if (newDueDate <= std::chrono::system_clock::now()) {
+
+    if (newDueDate <= createdAt) {
         return false;
     }
     dueDate = newDueDate;
@@ -76,6 +94,7 @@ bool Task::setDueDate(const std::chrono::system_clock::time_point& newDueDate) {
 }
 
 bool Task::setReminderTimeBefore(int minutes) {
+    
     if (minutes < 0) {
         return false;
     }

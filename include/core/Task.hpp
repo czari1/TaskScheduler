@@ -30,7 +30,6 @@ public:
     bool setDescription(const string& description);
     bool setDueDate(const std::chrono::system_clock::time_point& dueDate);
     bool setReminderTimeBefore(int minutes);
-    void markCompleted();
     void markIncomplete();
 
 private:

@@ -20,6 +20,6 @@ public:
 private:
     std::string recipient;
     std::string smtpServer{"localhost"};
-    int smtPort{25};
+    int smtpPort{25};
     std::string senderEmail{"notification@example.com"};
 };

@@ -28,12 +28,15 @@ public:
 
 
 private:
-    struct Event 
-    {
-        std::chrono::system_clock::time_point triggerZTime;
-        Callback callback;
-        Task task;
-    };
+struct Event {
+    std::chrono::system_clock::time_point triggerTime;
+    Callback callback;
+    Task task;
+    
+
+    Event(std::chrono::system_clock::time_point time, Callback cb, const Task& t)
+        : triggerTime(time), callback(cb), task(t) {}
+};
 
     std::multimap<std::chrono::system_clock::time_point,Event> events;
     std::string defaultReminderMessage{"Task reminder"};

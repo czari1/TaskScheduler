@@ -8,7 +8,7 @@ public:
     virtual ~Notification() = default;
 
     virtual bool setNotificationPrefix(const std::string& prefix);
-    virtual std::string getNotificationprefix() const;
+    virtual std::string getNotificationPrefix() const;
 
 protected:
     std::string notificationPrefix{"NOTIFICATION: "};

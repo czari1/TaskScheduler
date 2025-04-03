@@ -7,7 +7,7 @@
 enum class DbError {
     ConnectionFailed,
     QueryFailed,
-    ConstrainstViolation
+    ConstraintViolation
 };
 
 std::error_code makeErrorCode (DbError e);

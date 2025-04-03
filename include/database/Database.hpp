@@ -9,7 +9,7 @@ public:
     Database(const std::string& dbPath);
     ~Database();
 
-    bool initializeDatabase();
+    Result<bool> initializeDatabase();
 
     Result<int> addTask(const Task& task);
     Result<bool> updateTask(const Task& task);
