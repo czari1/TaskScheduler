@@ -61,3 +61,8 @@ class EmailDeliveryException : public NotificationException {
 public:
     explicit EmailDeliveryException(const std::string& message) : NotificationException("Email delivery failed: " + message) {}
 };
+
+class SchemaException : public DatabaseException {
+public:
+    explicit SchemaException(const std::string& message) : DatabaseException("Schema error: " + message) {}
+    };

@@ -7,7 +7,7 @@ class Task {
 public:
     Task(int id, 
         const string& description, 
-        int reminderTimeBefore,
+        int reminderMinutes,
         const std::chrono::system_clock::time_point createdAt,
         const std::chrono::system_clock::time_point& dueDate);
 
@@ -23,13 +23,13 @@ public:
     std::chrono::system_clock::time_point getCreatedAt() const;
     bool isCompleted() const;
     void markCompleted();
-    int getReminderTimeBefore() const;
+    int getReminderMinutes() const;
     std::chrono::system_clock::time_point getReminderTime() const;
 
     bool setId(int id);
     bool setDescription(const string& description);
     bool setDueDate(const std::chrono::system_clock::time_point& dueDate);
-    bool setReminderTimeBefore(int minutes);
+    bool setReminderMinutes(int minutes);
     void markIncomplete();
 
 private:
@@ -37,6 +37,6 @@ private:
     string description;
     std::chrono::system_clock::time_point dueDate;
     std::chrono::system_clock::time_point createdAt;
-    int reminderTimeBefore;
+    int reminderMinutes;
     bool completed{false};
 };

@@ -10,6 +10,7 @@ public:
     ~Database();
 
     Result<bool> initializeDatabase();
+    Result<void> validateDatabaseSchema();
 
     Result<int> addTask(const Task& task);
     Result<bool> updateTask(const Task& task);

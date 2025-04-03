@@ -3,12 +3,12 @@
 
 Task::Task(int id, 
            const string& description, 
-           int reminderTimeBefore,
+           int reminderMinutes,
            const std::chrono::system_clock::time_point createdAt,
            const std::chrono::system_clock::time_point& dueDate)
     : id(id), 
       description(description), 
-      reminderTimeBefore(reminderTimeBefore),
+      reminderMinutes(reminderMinutes),
       createdAt(createdAt),
       dueDate(dueDate),
       completed(false) {
@@ -21,7 +21,7 @@ Task::Task(int id,
             throw InvalidTaskDataException("Task description cannot be empty");
         }
         
-        if (reminderTimeBefore < 0) {
+        if (reminderMinutes < 0) {
             throw InvalidTaskDataException("Reminder time before due date cannot be negative");
         }
         
@@ -59,11 +59,11 @@ void Task::markIncomplete() {
 }
 
 std::chrono::system_clock::time_point Task::getReminderTime() const {
-    return dueDate - std::chrono::minutes(reminderTimeBefore);
+    return dueDate - std::chrono::minutes(reminderMinutes);
 }
 
-int Task::getReminderTimeBefore() const {
-    return reminderTimeBefore;
+int Task::getReminderMinutes() const {
+    return reminderMinutes;
 }
 
 bool Task::setId(int newId) {
@@ -93,11 +93,11 @@ bool Task::setDueDate(const std::chrono::system_clock::time_point& newDueDate) {
     return true;
 }
 
-bool Task::setReminderTimeBefore(int minutes) {
+bool Task::setReminderMinutes(int minutes) {
     
     if (minutes < 0) {
         return false;
     }
-    reminderTimeBefore = minutes;
+    reminderMinutes = minutes;
     return true;
 }
