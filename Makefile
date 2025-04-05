@@ -1,7 +1,7 @@
 # Compiler and flags
 CXX = g++
-CXXFLAGS = -std=c++23 -Wall -Wextra -I./include
-LDFLAGS = -lsqlite3
+CXXFLAGS = -std=c++23 -Wall -Wextra -I./include -I"C:/curl/curl-8.13.0_1-win64-mingw/include" 
+LDFLAGS = -L"C:/curl/curl-8.13.0_1-win64-mingw/lib" -lsqlite3 -lcurl -lwinmm -lws2_32 -lwldap32
 
 # Directories
 SRC_DIR = src
@@ -37,6 +37,11 @@ clean:
 	@if exist "$(TARGET)" del /q "$(TARGET)"
 
 .PHONY: all clean
+
+debug: CXXFLAGS += -g -O0
+debug: clean all
+
+.PHONY: all clean debug
 
 # Include dependencies
 -include $(DEPS)
