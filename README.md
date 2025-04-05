@@ -125,7 +125,3 @@ mingw32-make clean all
 # Debug build
 mingw32-make debug
 ```
-
-## License
-
-This project is licensed under the MIT License.
