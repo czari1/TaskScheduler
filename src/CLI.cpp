@@ -8,16 +8,37 @@
 #include <map>
 #include <algorithm>
 #include <regex>
+#include <thread>
+#include <atomic>
 
 // Global variables for application state
 std::shared_ptr<Database> db;
 std::shared_ptr<Scheduler> scheduler;
 std::shared_ptr<ConsoleNotification> consoleNotifier;
 std::shared_ptr<EmailNotification> emailNotifier;
+std::atomic<bool> stopChecker{false};
+std::thread checkerThread;
 bool running = true;
 
+void runEventChecker(std::shared_ptr<Scheduler> scheduler) {
+    while (!stopChecker) {
+        try {
+            // Check for events every 15 seconds
+            auto result = scheduler->checkAndTriggerEvents();
+            if (result && result.value()) {
+                // Events were triggered, no need to print anything here
+                // Console notifications will be displayed by the callback
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "Error in background checker: " << e.what() << std::endl;
+        }
+        
+        // Sleep for a short interval before checking again
+        std::this_thread::sleep_for(std::chrono::seconds(15));
+    }
+}
+
 void runCLI(const std::string& dbPath) {
-    
     
     try {
         // Initialize components
@@ -29,6 +50,7 @@ void runCLI(const std::string& dbPath) {
         auto initResult = db->initializeDatabase();
         if (!initResult) {
             TaskApp::handleError(initResult.error());
+            return;
         }
         
         scheduler = std::make_shared<Scheduler>();
@@ -38,6 +60,15 @@ void runCLI(const std::string& dbPath) {
         consoleNotifier->setNotificationPrefix("[TASK]");
         consoleNotifier->setColorOutput(true);
         consoleNotifier->setVerboseOutput(true);
+        consoleNotifier->setNotificationSound(true);
+        
+        std::cout << "Console notifications enabled and ready" << std::endl;
+
+        // Start the automatic event checker thread
+        stopChecker = false;
+        checkerThread = std::thread(runEventChecker, scheduler);
+        std::cout << "Automatic notification checking enabled (15-second intervals)" << std::endl;
+        
         
         // Map of commands to their handlers
         std::map<std::string, CommandHandler> commandMap = {
@@ -51,7 +82,7 @@ void runCLI(const std::string& dbPath) {
             {"check", handleCheckEvents},
             {"email", handleEmailSetup},
             {"exit", handleExit},
-            {"quit", handleExit}
+            {"quit", handleExit},
         };
         
         printHelp();
@@ -88,8 +119,19 @@ void runCLI(const std::string& dbPath) {
                 std::cout << "Type 'help' for available commands." << std::endl;
             }
         }
+
+        // Clean up the checker thread when exiting
+        stopChecker = true;
+        if (checkerThread.joinable()) {
+            checkerThread.join();
+        }
         
     } catch (const ConnectionException& e) {
+        // Clean up thread if an exception occurs
+        stopChecker = true;
+        if (checkerThread.joinable()) {
+            checkerThread.join();
+        }
         std::cerr << "Database connection error: " << e.what() << std::endl;
     } catch (const DatabaseException& e) {
         std::cerr << "Database error: " << e.what() << std::endl;
@@ -586,67 +628,68 @@ void handleScheduleTask(const std::vector<std::string>& args) {
         std::cout << "Example: schedule 1 console" << std::endl;
         return;
     }
-
+    
     try {
         int taskId = std::stoi(args[1]);
-        std::string notificationType = args.size() > 2 ? args[2] : "console";
+        std::string notificationType = "console";  // Default to console notification
         
+        if (args.size() >= 3) {
+            notificationType = args[2];
+        }
+        
+        // First get the task to schedule
         auto tasksResult = db->getPendingTasks();
         if (!tasksResult) {
             TaskApp::handleError(tasksResult.error());
             return;
         }
-
+        
         const auto& tasks = tasksResult.value();
         auto it = std::find_if(tasks.begin(), tasks.end(), 
-                              [taskId](const Task& t) { return t.getId() == taskId; });
+                              [taskId](const Task& t) {
+                                  return t.getId() == taskId;
+                              });
         
         if (it == tasks.end()) {
-            std::cout << "Task not found or already completed. ID: " << taskId << std::endl;
+            std::cout << "Task not found with ID: " << taskId << std::endl;
             return;
         }
-
-        Task task = *it;
         
-        if (notificationType == "console") {
-            // Create callback function from ConsoleNotification
-            Scheduler::Callback callback = [notifier = consoleNotifier](const Task& t, const std::string& msg) {
-                notifier->sendNotification(t, msg);
+        Task task = *it;
+        std::function<void(const Task&, const std::string&)> callback;
+        
+        if (notificationType == "email" && emailNotifier) {
+            callback = [](const Task& t, const std::string& msg) {
+                try {
+                    emailNotifier->sendNotification(t, msg);
+                } catch (const std::exception& e) {
+                    std::cerr << "Email notification failed: " << e.what() << std::endl;
+                    // Fallback to console notification
+                    consoleNotifier->sendNotification(t, msg);
+                }
             };
-            
-            auto scheduleResult = scheduler->scheduleTask(task, callback);
-            if (!scheduleResult) {
-                TaskApp::handleError(scheduleResult.error());
-                return;
-            }
-            
-            auto dueTime = std::chrono::system_clock::to_time_t(task.getDueDate());
-            std::tm* dueTm = std::localtime(&dueTime);
-            
-            std::cout << "Task scheduled for console notification" << std::endl;
-            std::cout << "Will notify " << task.getReminderMinutes() 
-                     << " minutes before due time: " 
-                     << std::put_time(dueTm, "%Y-%m-%d %H:%M") << std::endl;
-                     
-        } else if (notificationType == "email") {
-            if (!emailNotifier) {
-                std::cout << "Email notifications not configured. Use 'email' command first." << std::endl;
-                return;
-            }
-            
-            // Create callback function from EmailNotification
-            Scheduler::Callback callback = [notifier = emailNotifier](const Task& t, const std::string& msg) {
-                notifier->sendNotification(t, msg);
-            };
-            
-            auto scheduleResult = scheduler->scheduleTask(task, callback);
-            if (!scheduleResult) {
-                TaskApp::handleError(scheduleResult.error());
-                return;
-            }
-            std::cout << "Task scheduled for email notification" << std::endl;
+            std::cout << "Using email notification for task #" << taskId << std::endl;
         } else {
-            std::cout << "Unknown notification type. Use 'console' or 'email'." << std::endl;
+            // Default to console notification
+            callback = [](const Task& t, const std::string& msg) {
+                consoleNotifier->sendNotification(t, msg);
+            };
+            std::cout << "Using console notification for task #" << taskId << std::endl;
+        }
+        
+        auto scheduleResult = scheduler->scheduleTask(task, callback);
+        if (!scheduleResult) {
+            TaskApp::handleError(scheduleResult.error());
+            return;
+        }
+        
+        if (scheduleResult.value()) {
+            auto reminderTime = std::chrono::system_clock::to_time_t(task.getReminderTime());
+            std::tm tm = *std::localtime(&reminderTime);
+            std::cout << "Task #" << taskId << " scheduled for notification at: " 
+                     << std::put_time(&tm, "%Y-%m-%d %H:%M:%S") << std::endl;
+        } else {
+            std::cout << "Failed to schedule task #" << taskId << " for notification" << std::endl;
         }
     } catch (const std::invalid_argument& e) {
         std::cout << "Error: Invalid task ID. Please provide a number." << std::endl;
@@ -667,7 +710,7 @@ void handleCheckEvents(const std::vector<std::string>& args) {
     }
 
     if (pendingTasks.value().empty()) {
-        std::cout << "No pending tasks to check." << std::endl;
+        std::cout << "No pending tasks found." << std::endl;
         return;
     }
 
@@ -679,10 +722,10 @@ void handleCheckEvents(const std::vector<std::string>& args) {
         return;
     }
     
-    if (result.value() > 0) {
-        std::cout << "Triggered " << result.value() << " notifications." << std::endl;
+    if (result.value()) {
+        std::cout << "Notifications triggered successfully!" << std::endl;
     } else {
-        std::cout << "No notifications were due." << std::endl;
+        std::cout << "No notifications triggered at this time." << std::endl;
     }
     
     std::cout << "Events check completed." << std::endl;
@@ -736,6 +779,7 @@ void handleEmailSetup(const std::vector<std::string>& args) {
         std::cout << "Error configuring email: " << e.what() << std::endl;
     }
 }
+
 
 // Handle exit command
 void handleExit(const std::vector<std::string>& args) {

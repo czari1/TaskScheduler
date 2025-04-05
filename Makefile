@@ -1,7 +1,7 @@
 # Compiler and flags
 CXX = g++
 CXXFLAGS = -std=c++23 -Wall -Wextra -I./include -I"C:/curl/curl-8.13.0_1-win64-mingw/include" 
-LDFLAGS = -L"C:/curl/curl-8.13.0_1-win64-mingw/lib" -lsqlite3 -lcurl -lwinmm -lws2_32 -lwldap32
+LDFLAGS = -L"C:/curl/curl-8.13.0_1-win64-mingw/lib" -lsqlite3 -lcurl -lwinmm -lws2_32 -lwldap32 -pthread
 
 # Directories
 SRC_DIR = src

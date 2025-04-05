@@ -37,6 +37,7 @@ void handleScheduleTask(const std::vector<std::string>& args);
 void handleCheckEvents(const std::vector<std::string>& args);
 void handleEmailSetup(const std::vector<std::string>& args);
 void handleExit(const std::vector<std::string>& args);
+void handleTestNotification(const std::vector<std::string>& args);
 
 // Main application entry point
 void runCLI(const std::string& dbPath);
