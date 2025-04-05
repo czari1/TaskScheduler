@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "../include/core/Task.hpp"
+#include "../core/Task.hpp"
 
 class Notification {
 public:

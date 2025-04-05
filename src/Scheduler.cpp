@@ -8,11 +8,11 @@ Scheduler::~Scheduler() {}
 Result <bool> Scheduler::scheduleTask(const Task& task, Callback callback) {
 
     if (!callback) {
-        return std::unexpected(makeErrorCode(DbError::ConstraintViolation));
+        return make_unexpected<bool>(makeErrorCode(DbError::ConstraintViolation));
     }
 
     if (events.size() >= static_cast<size_t>(maxConcurrentTasks)) {
-        return std::unexpected(makeErrorCode(DbError::ConstraintViolation));
+        return make_unexpected<bool>(makeErrorCode(DbError::ConstraintViolation));
     }
     
     auto now = std::chrono::system_clock::now();
@@ -54,14 +54,14 @@ Result <bool> Scheduler::checkAndTriggerEvents() {
         return true;
         
     } catch (const SchedulerException& e) {
-        return std::unexpected(makeErrorCode(DbError::QueryFailed));
+        return make_unexpected<bool>(makeErrorCode(DbError::QueryFailed));
     } 
 }
 
 Result <bool> Scheduler::cancelTask (int taskId) {
 
     if (taskId <= 0) {
-        return std::unexpected(makeErrorCode(DbError::ConstraintViolation));
+        return make_unexpected<bool>(makeErrorCode(DbError::ConstraintViolation));
     }
 
     try {

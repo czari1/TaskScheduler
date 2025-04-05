@@ -7,11 +7,11 @@
 #include <memory>
 #include <chrono>
 #include "../database/Database.hpp"
-#include "../include/core/Task.hpp"
-#include "../include/core/Scheduler.hpp"
-#include "../include/notifications/ConsoleNotification.hpp"
-#include "../include/notifications/EmailNotification.hpp"
-#include "../include/database/Exceptions.hpp"
+#include "../core/Task.hpp"
+#include "../core/Scheduler.hpp"
+#include "../notifications/ConsoleNotification.hpp"
+#include "../notifications/EmailNotification.hpp"
+#include "../database/Exceptions.hpp"
 
 // Command handler type
 using CommandHandler = std::function<void(const std::vector<std::string>&)>;

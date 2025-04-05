@@ -93,6 +93,8 @@ Result <void> Database::validateDatabaseSchema() {
             throw SchemaException("Database schema incompatible: missing column " + col);
         }
     }
+    
+    return Result<void>();
 }
 
 Database::~Database(){
@@ -126,11 +128,11 @@ Result<bool> Database::initializeDatabase() {
 
 Result<int> Database::addTask(const Task& task){
     if(!isConnected()) {
-        return std::unexpected(makeErrorCode(DbError::ConnectionFailed));
+        return make_unexpected<int>(makeErrorCode(DbError::ConnectionFailed));
     } 
     
     if(task.getDescription().empty()) {
-        return std::unexpected(makeErrorCode(DbError::ConstraintViolation));
+        return make_unexpected<int>(makeErrorCode(DbError::ConstraintViolation));
     }
 
     const char* sql =
@@ -140,7 +142,7 @@ Result<int> Database::addTask(const Task& task){
     sqlite3_stmt* stmt;
     if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) != SQLITE_OK){
         std::string errorMsg = sqlite3_errmsg(db);
-        return std::unexpected(makeErrorCode(DbError::QueryFailed));
+        return make_unexpected<int>(makeErrorCode(DbError::QueryFailed));
     }
     
     try {
@@ -180,15 +182,15 @@ Result<int> Database::addTask(const Task& task){
         sqlite3_finalize(stmt);
 
         if (dynamic_cast<const ConstraintException*>(&e)) {
-            return std::unexpected(makeErrorCode(DbError::ConstraintViolation));
+            return make_unexpected<int>(makeErrorCode(DbError::ConstraintViolation));
         }
-        return std::unexpected(makeErrorCode(DbError::QueryFailed));
+        return make_unexpected<int>(makeErrorCode(DbError::QueryFailed));
     }
 }
 
 Result<bool> Database::updateTask(const Task& task) {
     if(!isConnected()) {
-        return std::unexpected(makeErrorCode(DbError::ConnectionFailed));
+        return make_unexpected<bool>(makeErrorCode(DbError::ConnectionFailed));
     }
     try {
         const char* sql = 
@@ -235,20 +237,20 @@ Result<bool> Database::updateTask(const Task& task) {
         return Result<bool>(true);
     } catch (const DatabaseException& e) {
         if (dynamic_cast<const ConstraintException*>(&e)) {
-            return std::unexpected(makeErrorCode(DbError::ConstraintViolation));
+            return make_unexpected<bool>(makeErrorCode(DbError::ConstraintViolation));
         }
-        return std::unexpected(makeErrorCode(DbError::QueryFailed));
+        return make_unexpected<bool>(makeErrorCode(DbError::QueryFailed));
     }
 }
 
 Result<bool> Database::deleteTask(int taskId) {
     
     if(!isConnected()){
-        return std::unexpected(makeErrorCode(DbError::ConnectionFailed));
+        return make_unexpected<bool>(makeErrorCode(DbError::ConnectionFailed));
     }
 
     if (taskId <= 0) {
-        return std::unexpected(makeErrorCode(DbError::ConstraintViolation));
+        return make_unexpected<bool>(makeErrorCode(DbError::ConstraintViolation));
     }
 
     try {
@@ -277,14 +279,14 @@ Result<bool> Database::deleteTask(int taskId) {
         return Result<bool>(true);
 
     } catch(const DatabaseException& e) {
-        return std::unexpected(makeErrorCode(DbError::QueryFailed));
+        return make_unexpected<bool>(makeErrorCode(DbError::QueryFailed));
     }
 }
 
 Result<std::vector<Task>> Database::getAllTasks() {
 
     if(!isConnected()){
-        return std::unexpected(makeErrorCode(DbError::ConnectionFailed));
+        return make_unexpected<std::vector<Task>>(makeErrorCode(DbError::ConnectionFailed));
     }
 
     try {
@@ -313,14 +315,14 @@ Result<std::vector<Task>> Database::getAllTasks() {
         return Result<std::vector<Task>>(tasks);
 
     } catch(const DatabaseException& e) {
-        return std::unexpected(makeErrorCode(DbError::QueryFailed));
+        return make_unexpected<std::vector<Task>>(makeErrorCode(DbError::QueryFailed));
     }
 }
 
 Result<std::vector<Task>> Database::getPendingTasks() {
     
     if (!isConnected()) {
-        return std::unexpected(makeErrorCode(DbError::ConnectionFailed));
+        return make_unexpected<std::vector<Task>>(makeErrorCode(DbError::ConnectionFailed));
     }
     
     try {
@@ -349,13 +351,13 @@ Result<std::vector<Task>> Database::getPendingTasks() {
         
         return Result<std::vector<Task>>(tasks);
     } catch (const DatabaseException& e) {
-        return std::unexpected(makeErrorCode(DbError::QueryFailed));
+        return make_unexpected<std::vector<Task>>(makeErrorCode(DbError::QueryFailed));
     }
 }
 
 Result<std::vector<Task>> Database::getDeletedTasks() {
     if (!isConnected()) {
-        return std::unexpected(makeErrorCode(DbError::ConnectionFailed));
+        return make_unexpected<std::vector<Task>>(makeErrorCode(DbError::ConnectionFailed));
     }
     
     // Assuming we're implementing a soft delete pattern where deleted tasks 
@@ -403,7 +405,7 @@ Result<std::vector<Task>> Database::getDeletedTasks() {
         
         return Result<std::vector<Task>>(tasks);
     } catch (const DatabaseException& e) {
-        return std::unexpected(makeErrorCode(DbError::QueryFailed));
+        return make_unexpected<std::vector<Task>>(makeErrorCode(DbError::QueryFailed));
     }
 }
 
